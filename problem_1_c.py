@@ -51,7 +51,7 @@ def preprocessing(data, labels):
     selected_bands = [blue_idx, green_idx, red_idx, red_edge_idx, nir_idx]
     data = data[:, selected_bands]
 
-    return data, labels
+    return data, labels, selected_bands
 
 def split_data(data, labels):
     X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=42, stratify=labels)
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     paviaU_data = paviaU_data[:, :, :-1]
 
     # Preprocessing
-    paviaU, paviaU_gt = preprocessing(paviaU_data, gt_labels)
+    paviaU, paviaU_gt, bands = preprocessing(paviaU_data, gt_labels)
     print(f"Data shape: {paviaU.shape}")
     print(f"Labels shape: {paviaU_gt.shape}")
 
@@ -146,41 +146,32 @@ if __name__ == "__main__":
 
     # distribution before SMOTE balancing
     unique, counts = np.unique(y_train, return_counts=True)
-    print(f'Distribution before SMOTE balancing:\n {dict(zip(unique, counts))}')  
+    print(f'Distribution before SMOTE balancing:\n {counts}')  
 
     # distribution after SMOTE balancing
     unique_bal, counts_bal = np.unique(y_train_balanced, return_counts=True)
-    print(f'Distribution after SMOTE balancing:\n {dict(zip(unique_bal, counts_bal))}')  
+    print(f'Distribution after SMOTE balancing:\n {counts_bal}')  
 
-    # predictions based on the objective used
+    # predictions based on the objective used (testing)
     y_pred = model.predict(X_test) # objective=multi:softmax
     # y_proba = model.predict_proba(X_test)  # objetctive=multi:softprob
-    # y_pred = np.argmax(y_proba, axis=1)
+    # y_pred_1d = np.argmax(y_pred, axis=0)
     
     # Classification report
     print(f'Classification report:\n {classification_report(y_test, y_pred)}')
 
-    # Train the model and store history
-    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=32, verbose=1)
+    height, width, num_bands = paviaU_data.shape  # (610, 340, 103)
+    X_full = paviaU_data.reshape(height*width, num_bands)  # (610*340, 103)
+    X_full_selected = X_full[:, bands]
+    X_full_scaled = scaler.transform(X_full_selected)
+    y_full_pred_1d = model.predict(X_full_scaled) 
+    y_full_pred_2d = y_full_pred_1d.reshape((height, width))
 
-    # Plot Training and Validation Loss
-    plt.figure(figsize=(12, 6))
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss')
-    plt.legend()
-    plt.show()
-
-    # Plot Training and Validation Accuracy
-    plt.figure(figsize=(12, 6))
-    plt.plot(history.history['accuracy'], label='Training Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.title('Training and Validation Accuracy')
-    plt.legend()
+    # Plot
+    plt.figure(figsize=(6,6))
+    plt.imshow(y_full_pred_2d, cmap='tab10')
+    plt.title("Predicted Classes", fontsize=8)
+    plt.axis('on')
     plt.show()
 
     # # Sentinel data usage
@@ -208,7 +199,7 @@ if __name__ == "__main__":
     # plt.colorbar()
     # plt.show()
 
-    # # Make predictions on Sentinel-2 data
+    # Make predictions on Sentinel-2 data
     # class_names = {
     #     0: "unlabeled",
     #     1: "asphalt",

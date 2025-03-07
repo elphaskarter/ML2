@@ -6,20 +6,19 @@ from scipy.ndimage import median_filter
 
 def stretch(band, stretch_type='minmax', percentiles=(2, 98)):
     band_clean = band[~np.isnan(band)]
-    if stretch_type == 'percentile':
-        # Use percentile-based stretching
-        p_low, p_high = np.nanpercentile(band_clean, percentiles)
+
+    if stretch_type == 'percentile':# Percentile stretching
+        p_low, p_high = np.nanpercentile(band_clean, percentiles) 
         band = np.clip(band, p_low, p_high)
         return (band - p_low) / (p_high - p_low)
     
-    elif stretch_type == 'minmax':
-        # Classic min-max stretching
+    elif stretch_type == 'minmax': # Classic min-max stretching
         bmin = np.nanmin(band_clean)
         bmax = np.nanmax(band_clean)
         return (band - bmin) / (bmax - bmin)
     
     else:
-        raise ValueError("Invalid stretch_type. Use 'minmax' or 'percentile'")
+        None
 
 # Loads hyperspectral data
 path_pavia_data = "Pavia\PaviaU.mat"
@@ -60,23 +59,23 @@ for stats in band_stats:
 def find_closest_band(target_wavelength):
     return np.argmin(np.abs(np.array(wavelengths) - target_wavelength))
 
-# Get RGB bands (using central wavelengths)
+# RGB bands (using central wavelengths)
 red_band = find_closest_band(650)  # ~650nm for red
 green_band = find_closest_band(550)  # ~550nm for green
 blue_band = find_closest_band(475)  # ~475nm for blue
   
-# Extract bands with stretching
+# Extract bands
 data_cube = pavia_data['paviaU']
 red = data_cube[:, :, red_band].astype(float)
 green = data_cube[:, :, green_band].astype(float)
 blue = data_cube[:, :, blue_band].astype(float)
 
-# Apply contrast stretching (try different parameters)
+# Apply contrast stretching
 red_stretched = stretch(red, stretch_type='percentile', percentiles=(5, 95))
 green_stretched = stretch(green, stretch_type='percentile', percentiles=(5, 95))
 blue_stretched = stretch(blue, stretch_type='percentile', percentiles=(5, 95))
 
-# Combine into RGB image and stretch
+# RGB image (stretch)
 rgb_image = np.dstack((red_stretched, green_stretched, blue_stretched))
 points = [(100, 50), (217, 243), (410, 190), (268.1, 163.3)]
 material = ['grass', 'roofing', 'concrete', 'tarmac']
@@ -96,13 +95,10 @@ plt.axis('on')
 plt.savefig('pavia_RGB.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-# Create a figure with subplots
 fig, axes = plt.subplots(2, 2, figsize=(8, 8))
 axes = axes.ravel()  
-
 for i, (x, y) in enumerate(points):
     ax = axes[i]
-    # Convert floating-point coordinates to integers
     x_int = int(round(x))  
     y_int = int(round(y))  
     spctrm = data_cube[x_int, y_int, :]  # Extract the spectrum at (x_int, y_int)
@@ -118,8 +114,6 @@ plt.show()
 if __name__ == "__main__":
     pass
 
-
-
 # # Create a 3D figure
 # rows, cols, bands = data_cube.shape
 # fig = plt.figure(figsize=(9, 6))
@@ -130,7 +124,7 @@ if __name__ == "__main__":
 #     band_data = data_cube[:, :, b] # Extract band b
 #     X, Y = np.meshgrid(range(cols), range(rows)) # Create X, Y grid
 #     Z = np.ones_like(band_data) * b * z_offset # Offset in z to stack slices
-#     ax.plot_surface(X, Y, Z, rstride=5, cstride=5, facecolors=plt.cm.rainbow(band_data / band_data.max()),
+#     ax.plot_surface(X, Y, Z, rstride=5, cstride=5, facecolors=plt.cm.inferno(band_data / band_data.max()),
 #                     linewidth=0, antialiased=False, shade=False)
 
 # ax.set_xlabel('X (columns)')

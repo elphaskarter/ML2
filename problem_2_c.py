@@ -102,9 +102,11 @@ def plot_regression_and_residuals(y_true, y_pred, dataset_type="Training"):
     # Regression Plot
     plt.subplot(1, 2, 1)
     plt.scatter(y_true, y_pred, alpha=0.6)
+    
     # Perfect prediction line
     min_val = min(y_true.min(), y_pred.min())
     max_val = max(y_true.max(), y_pred.max())
+
     plt.plot([min_val, max_val], [min_val, max_val], color='red', linestyle='--')
     plt.xlabel("Actual Chlorophyll")
     plt.ylabel("Predicted Chlorophyll")

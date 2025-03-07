@@ -23,7 +23,7 @@ rows, cols, bands = data_cube.shape
 X = data_cube.reshape((rows * cols, bands))
 wavelengths = wavelengths[:-1]
 
-# Calculate covariance matrix
+# covariance matrix
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 cov_matrix = np.cov(X_scaled, rowvar=False)
@@ -33,22 +33,24 @@ print("Covariance matrix shape:", cov_matrix.shape)
 pca = PCA()
 X_pca = pca.fit_transform(X) 
 
-# Perform PCA
-pca_10 = PCA(n_components=10)
-pca_10.fit(X)
+# # Perform PCA
+# pca_10 = PCA(n_components=10)
+# pca_10.fit(X)
 
-# Project/transform data onto principal components
-X_proj_10 = pca_10.transform(X) 
-pca_cube = X_proj_10.reshape((rows, cols, 10))
+# # Ppc scores onto 10 components
+# X_score_10 = pca_10.transform(X) 
+# pca_cube = X_score_10.reshape((rows, cols, 10))
 
-# Reconstructed data in lower dimension
-rcnstrd_data = pca_10.inverse_transform(X_proj_10)  
-rcnstrd_data = rcnstrd_data.reshape((rows, cols, bands))
+# # Reconstructed data in 10 pc dimension
+# rcnstrd_data = pca_10.inverse_transform(X_score_10)  
+# rcnstrd_data = rcnstrd_data.reshape((rows, cols, bands))
 
 # 99% variance
 var_ratios = pca.explained_variance_ratio_
 cum_var = np.cumsum(var_ratios)
 n_99 = np.argmax(cum_var >= 0.99) + 1
+
+print(f'PCs explainig 99% variance: {n_99}')
 
 X_pca_denoised = X_pca.copy()
 X_pca_denoised[:, n_99:] = 0
@@ -56,18 +58,19 @@ X_rcnstrctd = pca.inverse_transform(X_pca_denoised)
 denoised_data = X_rcnstrctd.reshape((rows, cols, bands))
 
 # Plot each principal component
-n_components = len(pca_10.components_) 
+n_components = n_99
 n_cols = 4
 n_rows = (n_components + n_cols - 1) // n_cols   
 
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 15))
 axes = axes.ravel()
 for i in range(n_components):
-    axes[i].imshow(pca_cube[:, :, i], cmap=cmocean.cm.thermal)
-    axes[i].set_title(f"PC{i+1}")
+    axes[i].imshow(denoised_data[:, :, i], cmap=cmocean.cm.thermal)
+    axes[i].set_title(f"PCs Explaining 99% Variance:\n PC {i+1}")
     axes[i].axis("off")
 for i in range(n_components, n_rows * n_cols):
     axes[i].axis("off")
+
 plt.tight_layout()
 plt.show()
 
@@ -86,7 +89,7 @@ for i, (x, y) in enumerate(points):
     ax = axes[i]
     x_int = int(round(x))  # Round to the nearest integer
     y_int = int(round(y))  # Round to the nearest integer
-    spctrm = rcnstrd_data[x_int, y_int, :]  # Extract the spectrum at (x_int, y_int)
+    spctrm = denoised_data[x_int, y_int, :]  # Extract the spectrum at (x_int, y_int)
     spctrm_nrmlzd = (spctrm - np.min(spctrm)) / (np.max(spctrm) - np.min(spctrm))
     ax.plot(wavelengths, spctrm_nrmlzd, color='black')
     ax.set_title(f'{material[i]}')
