@@ -13,7 +13,6 @@ import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE
 from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV
 
 def get_band_index(wavelength, start=430, spacing=5):
     wave = int(round((wavelength - start) / spacing))
@@ -160,6 +159,29 @@ if __name__ == "__main__":
     
     # Classification report
     print(f'Classification report:\n {classification_report(y_test, y_pred)}')
+
+    # Train the model and store history
+    history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=50, batch_size=32, verbose=1)
+
+    # Plot Training and Validation Loss
+    plt.figure(figsize=(12, 6))
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.show()
+
+    # Plot Training and Validation Accuracy
+    plt.figure(figsize=(12, 6))
+    plt.plot(history.history['accuracy'], label='Training Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.legend()
+    plt.show()
 
     # # Sentinel data usage
     # class_key = {
